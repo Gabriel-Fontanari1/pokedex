@@ -1,47 +1,19 @@
 class PokeModel {
-  String name;
-  int id;
-  String sprite;
-  String type;
-  //lista de movs
-  List<String> moves;
+  final String name;
+  final int id;
+  final String sprite;
+  final String type;
+  final List<String> moves;
 
-  PokeModel(
-      {required this.name,
-      required this.id,
-      required this.sprite,
-      required this.type,
-      required this.moves});
-
-  //getters e setters
-
-  set setMoves(List<String> moves) {
-    this.moves = moves;
-  }
-
-  List<String> get getMoves => moves;
-
-  set setSprite(String sprite) {
-    this.sprite = sprite;
-  }
-
-  String get getSprite => sprite;
-
-  set setType(String type) {
-    this.type = type;
-  }
-
-  String get getType => type;
-
-  set setId(int id) {
-    this.id = id;
-  }
-
-  int get getId => id;
-
-  set setName(String name) {
-    this.name = name;
-  }
+  PokeModel.fromJson(Map<String, dynamic> json)
+      : name = json['name'],
+        id = json['id'],
+        sprite = json['sprites']['other']['showdown']['front_default'] ?? '',
+        type = json['types'][0]['type']['name'],
+        moves = (json['moves'] as List)
+            .map((e) => e['move']['name'] as String)
+            .toList();
 
   String get getName => name;
+  String get getSprite => sprite;
 }
