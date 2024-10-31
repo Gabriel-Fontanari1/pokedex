@@ -10,7 +10,9 @@ class PokeModel {
         id = json['id'],
         sprite = json['sprites']['other']['showdown']['front_default'] ?? '',
         type = json['types'][0]['type']['name'],
-        moves = (json['moves'] as List).map((e) => e['move']['name'] as String).toList();
+        moves = (json['moves'] as List)
+            .map((e) => e['move']['name'] as String)
+            .toList();
 
   String get getName => name;
   String get getSprite => sprite;

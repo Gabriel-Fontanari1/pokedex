@@ -53,12 +53,72 @@ class PokemonItem extends StatelessWidget {
             child: IconButton(
               icon: const Icon(Icons.delete),
               onPressed: () {
-                onRemove(pokemon);
+                _showConfirmationDialog(context);
               },
             ),
           ),
         ],
       ),
+    );
+  }
+
+  void _showConfirmationDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return DialogRemovePokemon(
+          pokemon: pokemon,
+          onConfirm: () {
+            onRemove(pokemon);
+            Navigator.of(context).pop();
+          },
+        );
+      },
+    );
+  }
+}
+
+class PokemonsFiltrados {
+  List<PokeModel> filtrarPokemons(
+    List<PokeModel> pokemons,
+    String nome,
+    String tipo,
+    String movimento,
+  ) {
+    return pokemons.where((pokemon) {
+      final bool nomeMatch = nome.isEmpty ||
+          pokemon.name.toLowerCase().contains(nome.toLowerCase());
+      final bool tipoMatch = tipo.isEmpty ||
+          pokemon.type.toLowerCase().contains(tipo.toLowerCase());
+      final bool movimentoMatch = movimento.isEmpty ||
+          pokemon.moves
+              .any((m) => m.toLowerCase().contains(movimento.toLowerCase()));
+      return nomeMatch && tipoMatch && movimentoMatch;
+    }).toList();
+  }
+}
+
+class DialogRemovePokemon extends StatelessWidget {
+  final PokeModel pokemon;
+  final Function() onConfirm;
+
+  const DialogRemovePokemon(
+      {super.key, required this.pokemon, required this.onConfirm});
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      content: const Text('Deseja excluir o item?'),
+      actions: [
+        TextButton(
+          onPressed: onConfirm,
+          child: const Text('SIM'),
+        ),
+        TextButton(
+          child: const Text('NÃO'),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ],
     );
   }
 }
