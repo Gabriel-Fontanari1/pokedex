@@ -1,23 +1,26 @@
-//classe que vai ser uma gridview para exibir uma lista de pokemons, que vão ser adicionados pelo usuario no botão de buscar
-//não vai ser uma tela nova, vai ser inserido na pagehome
 import 'package:flutter/material.dart';
 import 'package:pokedex/app/core/poke_model.dart';
 
 class HomeGridview extends StatelessWidget {
-  const HomeGridview({super.key});
+  final List<PokeModel> pokemons;
+  final Function(PokeModel) onRemove;
+
+  const HomeGridview(
+      {super.key, required this.pokemons, required this.onRemove});
 
   @override
   Widget build(BuildContext context) {
-    List<PokeModel> pokemons = [];
-
     return GridView.builder(
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 1,
+        crossAxisCount: 7,
+        childAspectRatio: 0.8,
       ),
       itemCount: pokemons.length,
       itemBuilder: (context, index) {
-        return PokemonItem(pokemon: pokemons[index]);
+        return PokemonItem(
+          pokemon: pokemons[index],
+          onRemove: onRemove,
+        );
       },
     );
   }
@@ -25,16 +28,35 @@ class HomeGridview extends StatelessWidget {
 
 class PokemonItem extends StatelessWidget {
   final PokeModel pokemon;
+  final Function(PokeModel) onRemove;
 
-  const PokemonItem({super.key, required this.pokemon});
+  const PokemonItem({super.key, required this.pokemon, required this.onRemove});
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Column(
+      child: Stack(
         children: [
-          Image.network(pokemon.getSprite),
-          Text(pokemon.getName),
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('#${pokemon.id}'),
+                Text(pokemon.name),
+                Image.network(pokemon.getSprite),
+              ],
+            ),
+          ),
+          Positioned(
+            bottom: 8,
+            right: 8,
+            child: IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: () {
+                onRemove(pokemon);
+              },
+            ),
+          ),
         ],
       ),
     );

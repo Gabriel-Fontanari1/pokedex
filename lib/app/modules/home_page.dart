@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:pokedex/app/core/busca_poke.dart';
+import 'package:pokedex/app/core/poke_model.dart';
+import 'package:pokedex/app/modules/home_gridview.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -6,23 +9,43 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-//titulo do app
 class _HomePageState extends State<HomePage> {
+  final List<PokeModel> _pokemons = [];
+  final BuscaPoke _buscaPoke = BuscaPoke();
+
+  void _searchPokemon(String searchTerm) async {
+    try {
+      final pokemon = await _buscaPoke.getPokemon(searchTerm);
+      setState(() {
+        _pokemons.add(pokemon);
+      });
+    } catch (e) {
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Pokémon não encontrado: $searchTerm")),
+      );
+    }
+  }
+
+  void _removerPokemon(PokeModel pokemon) {
+    setState(() {
+      _pokemons.remove(pokemon);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Procurar Pokemon'),
+        title: const Text('Procurar Pokémon'),
       ),
-      body: const Column(
+      body: Column(
         children: [
-          SearchBar(),
-          TituloFiltro(),
-          Filtros(),
+          SearchBar(onSearch: _searchPokemon),
+          const TituloFiltro(),
+          const Filtros(),
           Expanded(
-            child: Center(
-              child: Text(''),
-            ),
+            child: HomeGridview(pokemons: _pokemons, onRemove: _removerPokemon),
           ),
         ],
       ),
@@ -30,28 +53,33 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-//barra de busca para procurar os pokemons pelo nome ou id
 class SearchBar extends StatelessWidget {
-  const SearchBar({super.key});
+  final Function(String) onSearch;
+
+  const SearchBar({super.key, required this.onSearch});
+
   @override
   Widget build(BuildContext context) {
+    final TextEditingController searchController = TextEditingController();
+
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: TextField(
+        controller: searchController,
         decoration: const InputDecoration(
           labelText: 'Procurar',
           prefixIcon: Icon(Icons.search),
           border: OutlineInputBorder(),
         ),
         onSubmitted: (searchTerm) {
-          // Lógica para buscar os pokemons pelo termo de busca
+          onSearch(searchTerm);
         },
       ),
     );
   }
 }
 
-//filtros
+
 class TituloFiltro extends StatelessWidget {
   const TituloFiltro({super.key});
   @override
@@ -106,7 +134,6 @@ class Filtros extends StatelessWidget {
             ),
           ),
         ),
-        //botão para confirmar os filtros
         Expanded(
           child: Padding(
             padding: const EdgeInsets.all(8.0),
