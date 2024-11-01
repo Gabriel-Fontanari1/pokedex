@@ -1,27 +1,20 @@
+import 'package:pokedex/app/core/poke_model.dart';
 import 'package:sqflite/sqflite.dart';
-// ignore: unnecessary_import
-import 'package:sqflite/sqlite_api.dart';
 // ignore: depend_on_referenced_packages
 import 'package:path/path.dart';
 
-//vou resgatar os pokemons pela api, e manter no banco de dados, e usar querys para filtrar os pokemons
 class DataBase {
-  //construtor com um acesso privado
   DataBase._();
-
-  //instancia do db
   static final DataBase instance = DataBase._();
-
-  //instancia do sqlite
   static Database? _database;
 
-  get database async {
-    if (_database == null) return _database;
-
-    return await _initDatabase();
+  Future<Database> get database async {
+    if (_database != null) return _database!;
+    _database = await _initDatabase();
+    return _database!;
   }
 
-  _initDatabase() async {
+  Future<Database> _initDatabase() async {
     return await openDatabase(
       join(await getDatabasesPath(), 'pokedex.db'),
       version: 1,
@@ -29,12 +22,37 @@ class DataBase {
     );
   }
 
-  _onCreate(Database db, int version) async {
+  Future<void> _onCreate(Database db, int version) async {
     await db.execute(
-        'CREATE TABLE pokemons(id INTEGER PRIMARY KEY, name TEXT, url TEXT, type TEXT, moves TEXT)');
+      'CREATE TABLE pokemons(id INTEGER PRIMARY KEY, name TEXT, sprite TEXT, type TEXT, moves TEXT)',
+    );
   }
 
-  String get createTable => '''
-  CREATE TABLE pokemons(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, url TEXT, type TEXT, moves TEXT)
-  ''';
+  Future<void> insertPokemon(PokeModel pokemon) async {
+    final db = await database;
+    await db.insert(
+      'pokemons',
+      pokemon.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  //remover pokemon
+  Future<void> deletePokemon(PokeModel pokemon) async {
+    final db = await database;
+    await db.delete(
+      'pokemons',
+      where: 'id = ?',
+      whereArgs: [pokemon.id],
+    );
+  }
+
+  Future<List<PokeModel>> getPokemons() async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query('pokemons');
+
+    return List.generate(maps.length, (i) {
+      return PokeModel.fromMap(maps[i]);
+    });
+  }
 }
