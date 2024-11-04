@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:pokedex/app/core/poke_model.dart';
 
-class HomeGridview extends StatelessWidget {
+class HomeGridView extends StatelessWidget {
   final List<PokeModel> pokemons;
   final Function(PokeModel) onRemove;
 
-  const HomeGridview(
-      {super.key, required this.pokemons, required this.onRemove});
+  const HomeGridView({
+    super.key,
+    required this.pokemons,
+    required this.onRemove,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GridView.builder(
+      padding: const EdgeInsets.all(8.0),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 7,
-        childAspectRatio: 0.8,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+        childAspectRatio: 0.75,
       ),
       itemCount: pokemons.length,
       itemBuilder: (context, index) {
@@ -30,31 +36,57 @@ class PokemonItem extends StatelessWidget {
   final PokeModel pokemon;
   final Function(PokeModel) onRemove;
 
-  const PokemonItem({super.key, required this.pokemon, required this.onRemove});
+  const PokemonItem({
+    super.key,
+    required this.pokemon,
+    required this.onRemove,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Card(
+      elevation: 4.0,
+      clipBehavior: Clip.antiAlias,
+      margin: const EdgeInsets.all(8.0),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.0),
+      ),
       child: Stack(
         children: [
           Center(
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('#${pokemon.id}'),
-                Text(pokemon.name),
-                Image.network(pokemon.getSprite),
+                Text(
+                  '#${pokemon.id}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  pokemon.name,
+                  style: const TextStyle(fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Image.network(
+                  pokemon.sprite,
+                  height: 80,
+                  width: 80,
+                  fit: BoxFit.contain,
+                ),
               ],
             ),
           ),
           Positioned(
-            bottom: 8,
-            right: 8,
+            bottom: 4,
+            right: 4,
             child: IconButton(
-              icon: const Icon(Icons.delete),
-              onPressed: () {
-                _showConfirmationDialog(context);
-              },
+              icon: const Icon(Icons.delete, color: Colors.black),
+              onPressed: () => _showConfirmationDialog(context),
             ),
           ),
         ],
@@ -78,37 +110,20 @@ class PokemonItem extends StatelessWidget {
   }
 }
 
-class PokemonsFiltrados {
-  List<PokeModel> filtrarPokemons(
-    List<PokeModel> pokemons,
-    String nome,
-    String tipo,
-    String movimento,
-  ) {
-    return pokemons.where((pokemon) {
-      final bool nomeMatch = nome.isEmpty ||
-          pokemon.name.toLowerCase().contains(nome.toLowerCase());
-      final bool tipoMatch = tipo.isEmpty ||
-          pokemon.type.toLowerCase().contains(tipo.toLowerCase());
-      final bool movimentoMatch = movimento.isEmpty ||
-          pokemon.moves
-              .any((m) => m.toLowerCase().contains(movimento.toLowerCase()));
-      return nomeMatch && tipoMatch && movimentoMatch;
-    }).toList();
-  }
-}
-
 class DialogRemovePokemon extends StatelessWidget {
   final PokeModel pokemon;
-  final Function() onConfirm;
+  final VoidCallback onConfirm;
 
-  const DialogRemovePokemon(
-      {super.key, required this.pokemon, required this.onConfirm});
+  const DialogRemovePokemon({
+    super.key,
+    required this.pokemon,
+    required this.onConfirm,
+  });
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      content: const Text('Deseja excluir o item?'),
+      content: const Text('Deseja remover o item?'),
       actions: [
         TextButton(
           onPressed: onConfirm,
@@ -116,7 +131,7 @@ class DialogRemovePokemon extends StatelessWidget {
         ),
         TextButton(
           child: const Text('NÃO'),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.of(context).pop(),
         ),
       ],
     );

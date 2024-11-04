@@ -1,7 +1,12 @@
+// home_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:pokedex/app/core/busca_poke.dart';
+import 'package:pokedex/app/core/database/data_base.dart';
+import 'package:pokedex/app/core/database/poke_query.dart';
 import 'package:pokedex/app/core/poke_model.dart';
 import 'package:pokedex/app/modules/home_gridview.dart';
+import 'package:pokedex/app/modules/home_filter.dart'; 
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -12,16 +17,29 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final List<PokeModel> _pokemons = [];
-  List<PokeModel> _filteredPokemons = [];
   final BuscaPoke _buscaPoke = BuscaPoke();
+  final DataBase _database = DataBase.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedPokemons();
+  }
+
+  Future<void> _loadSavedPokemons() async {
+    final savedPokemons = await _database.getPokemons();
+    setState(() {
+      _pokemons.addAll(savedPokemons);
+    });
+  }
 
   void _searchPokemon(String searchTerm) async {
     try {
       final pokemon = await _buscaPoke.getPokemon(searchTerm);
       setState(() {
         _pokemons.add(pokemon);
-        _filteredPokemons = List.from(_pokemons);
       });
+      await _database.insertPokemon(pokemon);
     } catch (e) {
       // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
@@ -33,19 +51,57 @@ class _HomePageState extends State<HomePage> {
   void _removerPokemon(PokeModel pokemon) {
     setState(() {
       _pokemons.remove(pokemon);
-      _filteredPokemons.remove(pokemon);
+      _database.deletePokemon(pokemon);
     });
   }
 
-  void _filtrarPokemons(String nome, String tipo, String movimento) {
+  void _applyFilter(String name, String type, String move) async {
+    final filteredPokemons = await getFilteredPokemons(
+      name: name,
+      type: type,
+      move: move,
+    );
+
     setState(() {
-      _filteredPokemons = PokemonsFiltrados().filtrarPokemons(
-        _pokemons,
-        nome,
-        tipo,
-        movimento,
-      );
+      _pokemons.clear();
+      _pokemons.addAll(filteredPokemons);
     });
+
+    if (filteredPokemons.isEmpty) {
+      _showNoResultsDialog(name, type, move);
+    }
+  }
+
+  void _showNoResultsDialog(String name, String type, String move) {
+    String causeOfError = '';
+
+    if (name.isNotEmpty && type.isEmpty && move.isEmpty) {
+      causeOfError = 'Erro ao filtrar pelo Nome';
+    } else if (type.isNotEmpty && name.isEmpty && move.isEmpty) {
+      causeOfError = 'Erro ao filtrar pelo Tipo';
+    } else if (move.isNotEmpty && name.isEmpty && type.isEmpty) {
+      causeOfError = 'Erro ao filtrar por Movimentos';
+    } else {
+      causeOfError = 'Critérios inválidos nos filtros aplicados';
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Ocorreu um erro ao filtrar:'),
+          content: Text(causeOfError),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Fechar'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -57,11 +113,13 @@ class _HomePageState extends State<HomePage> {
       body: Column(
         children: [
           SearchBar(onSearch: _searchPokemon),
-          const TituloFiltro(),
-          Filtros(onFiltrar: _filtrarPokemons),
+          const SizedBox(height: 8),
+          Filtros(onFilterApplied: _applyFilter),
           Expanded(
-            child: HomeGridview(
-                pokemons: _filteredPokemons, onRemove: _removerPokemon),
+            child: HomeGridView(
+              pokemons: _pokemons,
+              onRemove: _removerPokemon,
+            ),
           ),
         ],
       ),
@@ -87,99 +145,8 @@ class SearchBar extends StatelessWidget {
           prefixIcon: Icon(Icons.search),
           border: OutlineInputBorder(),
         ),
-        onSubmitted: (searchTerm) {
-          onSearch(searchTerm);
-        },
+        onSubmitted: onSearch,
       ),
-    );
-  }
-}
-
-class TituloFiltro extends StatelessWidget {
-  const TituloFiltro({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.all(8.0),
-      child: const Text('Filtros'),
-    );
-  }
-}
-
-class Filtros extends StatefulWidget {
-  final Function(String, String, String) onFiltrar;
-
-  const Filtros({super.key, required this.onFiltrar});
-
-  @override
-  State<Filtros> createState() => _FiltrosState();
-}
-
-class _FiltrosState extends State<Filtros> {
-  final TextEditingController nomeController = TextEditingController();
-  final TextEditingController tipoController = TextEditingController();
-  final TextEditingController movimentoController = TextEditingController();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: nomeController,
-              decoration: const InputDecoration(
-                labelText: 'Nome',
-                border: OutlineInputBorder(),
-                hintText: 'Digite o nome',
-              ),
-            ),
-          ),
-        ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: tipoController,
-              decoration: const InputDecoration(
-                labelText: 'Tipo',
-                border: OutlineInputBorder(),
-                hintText: 'Digite o tipo',
-              ),
-            ),
-          ),
-        ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: movimentoController,
-              decoration: const InputDecoration(
-                labelText: 'Movimentos',
-                border: OutlineInputBorder(),
-                hintText: 'Digite o movimento',
-              ),
-            ),
-          ),
-        ),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ElevatedButton(
-              onPressed: () {
-                widget.onFiltrar(
-                  nomeController.text,
-                  tipoController.text,
-                  movimentoController.text,
-                );
-              },
-              child: const Text('Filtrar'),
-            ),
-          ),
-        )
-      ],
     );
   }
 }
