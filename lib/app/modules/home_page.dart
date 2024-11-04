@@ -1,8 +1,12 @@
+// home_page.dart
+
 import 'package:flutter/material.dart';
 import 'package:pokedex/app/core/busca_poke.dart';
 import 'package:pokedex/app/core/database/data_base.dart';
+import 'package:pokedex/app/core/database/poke_query.dart';
 import 'package:pokedex/app/core/poke_model.dart';
 import 'package:pokedex/app/modules/home_gridview.dart';
+import 'package:pokedex/app/modules/home_filter.dart'; 
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -51,6 +55,55 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  void _applyFilter(String name, String type, String move) async {
+    final filteredPokemons = await getFilteredPokemons(
+      name: name,
+      type: type,
+      move: move,
+    );
+
+    setState(() {
+      _pokemons.clear();
+      _pokemons.addAll(filteredPokemons);
+    });
+
+    if (filteredPokemons.isEmpty) {
+      _showNoResultsDialog(name, type, move);
+    }
+  }
+
+  void _showNoResultsDialog(String name, String type, String move) {
+    String causeOfError = '';
+
+    if (name.isNotEmpty && type.isEmpty && move.isEmpty) {
+      causeOfError = 'Erro ao filtrar pelo Nome';
+    } else if (type.isNotEmpty && name.isEmpty && move.isEmpty) {
+      causeOfError = 'Erro ao filtrar pelo Tipo';
+    } else if (move.isNotEmpty && name.isEmpty && type.isEmpty) {
+      causeOfError = 'Erro ao filtrar por Movimentos';
+    } else {
+      causeOfError = 'Critérios inválidos nos filtros aplicados';
+    }
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Ocorreu um erro ao filtrar:'),
+          content: Text(causeOfError),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Fechar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,6 +113,8 @@ class _HomePageState extends State<HomePage> {
       body: Column(
         children: [
           SearchBar(onSearch: _searchPokemon),
+          const SizedBox(height: 8),
+          Filtros(onFilterApplied: _applyFilter),
           Expanded(
             child: HomeGridView(
               pokemons: _pokemons,
@@ -71,7 +126,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-
 
 class SearchBar extends StatelessWidget {
   final Function(String) onSearch;
@@ -96,4 +150,3 @@ class SearchBar extends StatelessWidget {
     );
   }
 }
-

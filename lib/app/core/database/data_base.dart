@@ -37,7 +37,6 @@ class DataBase {
     );
   }
 
-  //remover pokemon
   Future<void> deletePokemon(PokeModel pokemon) async {
     final db = await database;
     await db.delete(
