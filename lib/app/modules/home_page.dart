@@ -6,7 +6,7 @@ import 'package:pokedex/app/core/database/data_base.dart';
 import 'package:pokedex/app/core/database/poke_query.dart';
 import 'package:pokedex/app/core/poke_model.dart';
 import 'package:pokedex/app/modules/home_gridview.dart';
-import 'package:pokedex/app/modules/home_filter.dart'; 
+import 'package:pokedex/app/modules/home_filter.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -36,9 +36,29 @@ class _HomePageState extends State<HomePage> {
   void _searchPokemon(String searchTerm) async {
     try {
       final pokemon = await _buscaPoke.getPokemon(searchTerm);
+      final existsInDb = await _database.pokemonExists(pokemon);
+
+      if (existsInDb) {
+        // ignore: use_build_context_synchronously
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Pokémon já está na lista: ${pokemon.name}")),
+        );
+        return;
+      }
+
+      if (_pokemons.any((p) => p.name == pokemon.name)) {
+        // ignore: use_build_context_synchronously
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Pokémon já exibido: ${pokemon.name}")),
+        );
+        return;
+      }
+
       setState(() {
         _pokemons.add(pokemon);
+        _pokemons.sort((a, b) => a.id.compareTo(b.id));
       });
+
       await _database.insertPokemon(pokemon);
     } catch (e) {
       // ignore: use_build_context_synchronously
