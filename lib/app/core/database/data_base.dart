@@ -48,10 +48,22 @@ class DataBase {
 
   Future<List<PokeModel>> getPokemons() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('pokemons');
-
+    final List<Map<String, dynamic>> maps = await db.query(
+      'pokemons',
+      orderBy: 'id ASC',
+    );
     return List.generate(maps.length, (i) {
       return PokeModel.fromMap(maps[i]);
     });
+  }
+
+  Future<bool> pokemonExists(PokeModel pokemon) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'pokemons',
+      where: 'name = ?',
+      whereArgs: [pokemon.name],
+    );
+    return maps.isNotEmpty;
   }
 }
